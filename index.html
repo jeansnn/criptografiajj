@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criptografia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px;
+            font-size: 16px;
+        }
+        #resultado {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Criptografia</h1>
+    <p>Digite uma palavra ou frase (apenas letras maiúsculas):</p>
+    <input type="text" id="entrada" placeholder="Ex: TESTE">
+    <br>
+    <button onclick="criptografar()">Criptografar</button>
+    <div id="resultado"></div>
+
+    <script>
+        function criptografar() {
+            const tabela = [
+                '', 
+                '1',  // A -> 1
+                'A',  // B -> A
+                '2',  // C -> 2
+                'B',  // D -> B
+                '3',  // E -> 3
+                'C',  // F -> C
+                '4',  // G -> 4
+                'D',  // H -> D
+                '5',  // I -> 5
+                'E',  // J -> E
+                '6',  // K -> 6
+                'F',  // L -> F
+                '7',  // M -> 7
+                'G',  // N -> G
+                '8',  // O -> 8
+                'H',  // P -> H
+                '9',  // Q -> 9
+                'I',  // R -> I
+                '10', // S -> 10
+                'J',  // T -> J
+                '11', // U -> 11
+                'K',  // V -> K
+                '12', // W -> 12
+                'L',  // X -> L
+                '13', // Y -> 13
+                'M'   // Z -> M
+            ];
+
+            const palavra = document.getElementById('entrada').value;
+            let resultado = '';
+
+            for (let i = 0; i < palavra.length; i++) {
+                const letraAtual = palavra[i];
+
+                if (letraAtual >= 'A' && letraAtual <= 'Z') {
+                    const codigo = letraAtual.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+                    resultado += tabela[codigo];
+                } else {
+                    resultado += letraAtual;
+                }
+            }
+
+            document.getElementById('resultado').innerHTML = 'Resultado criptografado: ' + resultado;
+        }
+    </script>
+</body>
+</html>
