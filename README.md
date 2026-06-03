@@ -27,7 +27,7 @@ Este projeto foi construído utilizando tecnologias web nativas (Vanilla Web), s
 Nao ha necessidade de instalacao de dependencias. O aplicativo roda diretamente no navegador.
 
 1. Faca o clone deste repositorio:
-   git clone https://github.com/SEU_USUARIO/nome-do-repositorio.git
+   git clone https://github.com/jeansnn/contador-producao.git
 
 2. Abra o arquivo index.html no seu navegador.
 
