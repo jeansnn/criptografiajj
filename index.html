@@ -2,83 +2,261 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criptografia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Colheita Produção</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+            touch-action: manipulation;
+            overflow: hidden;
         }
-        input, button {
-            padding: 10px;
-            margin: 10px;
-            font-size: 16px;
-        }
-        #resultado {
-            margin-top: 20px;
+        
+        .titulo {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 5px;
             font-weight: bold;
+        }
+
+        .status-sensor {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            height: 20px;
+        }
+
+        .visor {
+            font-size: 6rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .btn-contar {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 220px;
+            height: 220px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            box-shadow: 0 10px 25px rgba(39, 174, 96, 0.4);
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin-bottom: 30px;
+        }
+
+        .btn-contar:active {
+            transform: scale(0.95);
+            background-color: #219150;
+        }
+
+        .controles {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn-acao {
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn-travar {
+            background-color: #f39c12;
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-travar.travado {
+            background-color: #8e44ad;
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+        }
+
+        .btn-limpar {
+            background-color: #e74c3c;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
         }
     </style>
 </head>
 <body>
-    <h1>Criptografia</h1>
-    <p>Digite uma palavra ou frase (apenas letras maiúsculas):</p>
-    <input type="text" id="entrada" placeholder="Ex: TESTE">
-    <br>
-    <button onclick="criptografar()">Criptografar</button>
-    <div id="resultado"></div>
+
+    <div class="titulo">Colheita Produção</div>
+    <div class="status-sensor" id="statusSensor">Sensor desativado</div>
+    <div class="visor" id="contador">0</div>
+
+    <button class="btn-contar" id="btnContar">CONTAR</button>
+
+    <div class="controles">
+        <button class="btn-acao btn-travar" id="btnTravar">🔒 Travar & Sensor</button>
+        <button class="btn-acao btn-limpar" id="btnLimpar">Zerar 🔄</button>
+    </div>
 
     <script>
-        function criptografar() {
-            const tabela = [
-                '', 
-                '1',  // A -> 1
-                'A',  // B -> A
-                '2',  // C -> 2
-                'B',  // D -> B
-                '3',  // E -> 3
-                'C',  // F -> C
-                '4',  // G -> 4
-                'D',  // H -> D
-                '5',  // I -> 5
-                'E',  // J -> E
-                '6',  // K -> 6
-                'F',  // L -> F
-                '7',  // M -> 7
-                'G',  // N -> G
-                '8',  // O -> 8
-                'H',  // P -> H
-                '9',  // Q -> 9
-                'I',  // R -> I
-                '10', // S -> 10
-                'J',  // T -> J
-                '11', // U -> 11
-                'K',  // V -> K
-                '12', // W -> 12
-                'L',  // X -> L
-                '13', // Y -> 13
-                'M'   // Z -> M
-            ];
+        // --- 1. RECUPERAÇÃO DE DADOS ---
+        let contagem = localStorage.getItem('contagemCafe') ? parseInt(localStorage.getItem('contagemCafe')) : 0;
+        const visor = document.getElementById('contador');
+        const statusSensor = document.getElementById('statusSensor');
+        visor.innerText = contagem;
 
-            const palavra = document.getElementById('entrada').value;
-            let resultado = '';
+        const btnContar = document.getElementById('btnContar');
+        const btnLimpar = document.getElementById('btnLimpar');
+        const btnTravar = document.getElementById('btnTravar');
+        
+        let audioCtx;
+        let isTravado = false;
+        let wakeLock = null;
+        let aguardandoRetorno = false;
 
-            for (let i = 0; i < palavra.length; i++) {
-                const letraAtual = palavra[i];
-
-                if (letraAtual >= 'A' && letraAtual <= 'Z') {
-                    const codigo = letraAtual.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-                    resultado += tabela[codigo];
-                } else {
-                    resultado += letraAtual;
-                }
-            }
-
-            document.getElementById('resultado').innerHTML = 'Resultado criptografado: ' + resultado;
+        // --- 2. FUNÇÕES DE CONTAGEM E FEEDBACK ---
+        function atualizarContagem() {
+            contagem++;
+            visor.innerText = contagem;
+            localStorage.setItem('contagemCafe', contagem);
+            acionarFeedback();
         }
+
+        function acionarFeedback() {
+            // Áudio (Bipe)
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+
+            // Vibração
+            if (navigator.vibrate) navigator.vibrate(50);
+        }
+
+        btnContar.addEventListener('click', atualizarContagem);
+
+        btnLimpar.addEventListener('click', () => {
+            if(isTravado) {
+                alert("⚠️ Destrave o aplicativo primeiro para poder zerar!");
+                return;
+            }
+            if(confirm(`Total final: ${contagem}. Deseja realmente zerar a contagem?`)) {
+                contagem = 0;
+                visor.innerText = contagem;
+                localStorage.setItem('contagemCafe', 0);
+                if (navigator.vibrate) navigator.vibrate([30, 50, 30]); 
+            }
+        });
+
+        // --- 3. TRAVA DE SEGURANÇA E TELA ATIVA ---
+        window.addEventListener('beforeunload', (e) => {
+            if (isTravado) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        function bloquearVoltar() {
+            history.pushState(null, null, location.href);
+        }
+        window.addEventListener('popstate', () => {
+            if (isTravado) {
+                bloquearVoltar();
+                alert("⚠️ Aplicativo travado! Clique em 'Destravar' antes de sair.");
+            }
+        });
+
+        // --- 4. SENSOR DE MOVIMENTO (CONTROLE REMOTO) ---
+        function lidarComInclinacao(evento) {
+            if (!isTravado) return;
+
+            // Pega o ângulo de inclinação para frente/trás
+            let inclinacaoFrenteTras = Math.round(evento.beta); 
+            statusSensor.innerText = `Lendo movimento... Ângulo: ${inclinacaoFrenteTras}°`;
+
+            // Lógica do movimento:
+            // Desce a ponta do celular (ângulo menor que 45) -> Conta
+            // Levanta o celular de volta (ângulo maior que 65) -> Arma para o próximo
+            if (inclinacaoFrenteTras < 45 && !aguardandoRetorno) {
+                atualizarContagem();
+                aguardandoRetorno = true;
+            } 
+            else if (inclinacaoFrenteTras > 65) {
+                aguardandoRetorno = false;
+            }
+        }
+
+        btnTravar.addEventListener('click', async () => {
+            isTravado = !isTravado;
+
+            if (isTravado) {
+                // Ligar Trava
+                btnTravar.innerText = "🔓 Destravar";
+                btnTravar.classList.add('travado');
+                bloquearVoltar(); 
+
+                // Ligar Wake Lock (Tela não apaga)
+                try {
+                    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) { console.log("Wake Lock falhou"); }
+
+                // Ligar Áudio preventivamente
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+                // Ligar Sensor de Movimento
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    // Requisito do iOS (iPhone)
+                    try {
+                        const permissionState = await DeviceOrientationEvent.requestPermission();
+                        if (permissionState === 'granted') {
+                            window.addEventListener('deviceorientation', lidarComInclinacao);
+                            statusSensor.innerText = "✅ Aguardando movimento...";
+                        } else {
+                            statusSensor.innerText = "❌ Permissão do sensor negada.";
+                            alert("Permissão do sensor negada pelo aparelho.");
+                        }
+                    } catch (error) {
+                        statusSensor.innerText = "❌ Erro de HTTPS/Segurança.";
+                        alert("Erro no sensor. O site precisa estar hospedado em HTTPS!");
+                    }
+                } else {
+                    // Android e outros
+                    window.addEventListener('deviceorientation', lidarComInclinacao);
+                    statusSensor.innerText = "✅ Aguardando movimento...";
+                }
+
+            } else {
+                // Desligar Trava
+                btnTravar.innerText = "🔒 Travar & Sensor";
+                btnTravar.classList.remove('travado');
+                statusSensor.innerText = "Sensor desativado";
+
+                // Liberar Tela
+                if (wakeLock !== null) {
+                    wakeLock.release();
+                    wakeLock = null;
+                }
+                // Desligar Evento de Movimento
+                window.removeEventListener('deviceorientation', lidarComInclinacao);
+            }
+        });
     </script>
 </body>
 </html>
